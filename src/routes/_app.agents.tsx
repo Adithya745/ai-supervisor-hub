@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TopBar } from "@/components/app-shell";
-import { agents_data } from "@/lib/mock-data";
-import { Trophy, TrendingUp } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
+import { useTranscripts } from "@/lib/transcript-store";
+import { EmptyState } from "@/components/upload-zone";
+import { Users } from "lucide-react";
 
 export const Route = createFileRoute("/_app/agents")({
   head: () => ({ meta: [{ title: "Agent Performance · Sentinel AI" }] }),
@@ -11,58 +10,57 @@ export const Route = createFileRoute("/_app/agents")({
 });
 
 function Agents() {
-  const sorted = [...agents_data].sort((a, b) => b.quality - a.quality);
+  const transcripts = useTranscripts((s) => s.transcripts);
+
+  // Group by detected agent name
+  const byAgent = new Map<string, typeof transcripts>();
+  for (const t of transcripts) {
+    const arr = byAgent.get(t.agent) ?? [];
+    arr.push(t); byAgent.set(t.agent, arr);
+  }
+
+  const rows = Array.from(byAgent.entries()).map(([name, items]) => {
+    const total = items.length;
+    const escalations = items.filter((t) => t.priority === "URGENT").length;
+    const positive = items.filter((t) => t.sentiment === "Positive").length;
+    const negative = items.filter((t) => t.sentiment === "Negative").length;
+    const avgSentiment = total ? Math.round(((positive - negative) / total + 1) * 50) : 0;
+    const resolved = total - escalations;
+    return {
+      name,
+      calls: total,
+      avgSentiment,
+      escalationRate: total ? Math.round((escalations / total) * 1000) / 10 : 0,
+      resolutionRate: total ? Math.round((resolved / total) * 1000) / 10 : 0,
+    };
+  }).sort((a, b) => b.calls - a.calls);
+
   return (
     <>
-      <TopBar title="Agent Performance" subtitle="Leaderboard of agents ranked by AI-assessed quality" />
-      <div className="space-y-6 p-6">
-        {/* Podium */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          {sorted.slice(0, 3).map((a, i) => (
-            <div key={a.name} className={`rounded-xl border p-5 ${i === 0 ? "border-warning/40 bg-gradient-to-br from-warning/10 to-transparent" : "border-border bg-card"}`}>
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12"><AvatarFallback className={`text-sm font-bold ${i === 0 ? "bg-warning/20 text-warning" : "bg-primary/15 text-primary"}`}>{a.name.split(" ").map((p) => p[0]).join("")}</AvatarFallback></Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2"><span className="truncate font-semibold">{a.name}</span>{i === 0 && <Trophy className="h-4 w-4 text-warning"/>}</div>
-                  <div className="text-xs text-muted-foreground">Rank #{i + 1}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-gradient">{a.quality}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Quality</div>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div><div className="text-sm font-semibold">{a.calls}</div><div className="text-[10px] text-muted-foreground">Calls</div></div>
-                <div><div className="text-sm font-semibold text-success">{Math.round(a.sentiment * 100)}%</div><div className="text-[10px] text-muted-foreground">Sentiment</div></div>
-                <div><div className="text-sm font-semibold text-warning">{a.escalations}</div><div className="text-[10px] text-muted-foreground">Escalated</div></div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="border-b border-border px-5 py-4">
-            <h3 className="text-sm font-semibold">Full Leaderboard</h3>
-            <p className="text-xs text-muted-foreground">All agents ranked by composite quality score</p>
+      <TopBar title="Agent Performance" subtitle="Derived from uploaded transcripts · future-ready scaffolding" />
+      <div className="space-y-4 p-6">
+        {transcripts.length === 0 ? (
+          <EmptyState title="No agent data yet" hint="Agent metrics are extracted from transcript content. Upload calls to populate." />
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <tr><th className="px-4 py-3 text-left">Agent</th><th className="px-4 py-3 text-left">Calls</th><th className="px-4 py-3 text-left">Avg Sentiment</th><th className="px-4 py-3 text-left">Escalation Rate</th><th className="px-4 py-3 text-left">Resolution Rate</th></tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.name} className="border-t border-border">
+                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="grid h-8 w-8 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary"><Users className="h-3.5 w-3.5" /></div><span className="font-medium">{r.name}</span></div></td>
+                    <td className="px-4 py-3 font-mono">{r.calls}</td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><div className="h-full bg-success" style={{ width: `${r.avgSentiment}%` }}/></div><span className="text-xs text-muted-foreground">{r.avgSentiment}</span></div></td>
+                    <td className="px-4 py-3"><span className={`rounded px-2 py-0.5 text-xs font-semibold ${r.escalationRate > 30 ? "bg-critical/15 text-critical" : r.escalationRate > 15 ? "bg-warning/15 text-warning" : "bg-success/15 text-success"}`}>{r.escalationRate}%</span></td>
+                    <td className="px-4 py-3 font-mono text-success">{r.resolutionRate}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2.5 text-left font-semibold">Rank</th><th className="px-4 py-2.5 text-left font-semibold">Agent</th><th className="px-4 py-2.5 text-left font-semibold">Calls</th><th className="px-4 py-2.5 text-left font-semibold">Avg Sentiment</th><th className="px-4 py-2.5 text-left font-semibold">Escalations</th><th className="px-4 py-2.5 text-left font-semibold">Resolution Quality</th></tr>
-            </thead>
-            <tbody>
-              {sorted.map((a, i) => (
-                <tr key={a.name} className="border-t border-border hover:bg-muted/30">
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-muted-foreground">#{i + 1}</td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-2"><Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">{a.name.split(" ").map((p) => p[0]).join("")}</AvatarFallback></Avatar>{a.name}</div></td>
-                  <td className="px-4 py-3">{a.calls}</td>
-                  <td className="px-4 py-3"><span className={a.sentiment >= 0.75 ? "text-success" : "text-warning"}>{a.sentiment.toFixed(2)}</span></td>
-                  <td className="px-4 py-3">{a.escalations}</td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-2"><Progress value={a.quality} className="h-1.5 w-32" /><span className="font-semibold">{a.quality}</span></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        )}
       </div>
     </>
   );

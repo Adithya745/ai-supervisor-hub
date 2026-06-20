@@ -1,57 +1,54 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TopBar } from "@/components/app-shell";
-import { calls, type Priority } from "@/lib/mock-data";
-import { AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useTranscripts } from "@/lib/transcript-store";
+import { EmptyState } from "@/components/upload-zone";
+import { AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_app/priority")({
   head: () => ({ meta: [{ title: "Priority Monitor · Sentinel AI" }] }),
   component: PriorityPage,
 });
 
-const cols: { key: Priority; label: string; icon: any; color: string; ring: string }[] = [
-  { key: "urgent", label: "Urgent", icon: AlertTriangle, color: "text-critical", ring: "border-critical/40" },
-  { key: "medium", label: "Medium", icon: AlertCircle, color: "text-warning", ring: "border-warning/40" },
-  { key: "low", label: "Low", icon: CheckCircle2, color: "text-success", ring: "border-success/40" },
-];
-
 function PriorityPage() {
+  const urgent = useTranscripts((s) => s.transcripts.filter((t) => t.priority === "URGENT")).sort((a, b) => b.priorityScore - a.priorityScore);
+
   return (
     <>
-      <TopBar title="Priority Monitor" subtitle="Kanban view of every active call by AI-assigned priority" />
-      <div className="grid gap-4 p-6 lg:grid-cols-3">
-        {cols.map((col) => {
-          const items = calls.filter((c) => c.priority === col.key);
-          return (
-            <div key={col.key} className={`flex flex-col rounded-xl border bg-card ${col.ring}`}>
-              <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <col.icon className={`h-4 w-4 ${col.color}`} />
-                  <h3 className="text-sm font-semibold uppercase tracking-wider">{col.label}</h3>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">{items.length}</span>
+      <TopBar title="Priority Monitor" subtitle="Urgent escalations across all uploaded transcripts" />
+      <div className="space-y-4 p-6">
+        <div className="flex items-center gap-2 rounded-lg border border-critical/30 bg-critical/5 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-critical" />
+          <span className="text-sm font-medium">{urgent.length} urgent transcript{urgent.length === 1 ? "" : "s"} require immediate action</span>
+        </div>
+
+        {urgent.length === 0 ? (
+          <EmptyState title="No urgent escalations" hint="Upload transcripts; any flagged URGENT will appear here automatically." />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {urgent.map((t) => (
+              <Link key={t.id} to="/calls/$id" params={{ id: t.id }}
+                className="pulse-critical block rounded-xl border border-critical/30 bg-card p-5 transition hover:border-critical/60 hover:shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-semibold text-critical">{t.filename}</span>
+                  <span className="rounded bg-critical/15 px-2 py-0.5 text-[10px] font-bold uppercase text-critical">Score {t.priorityScore}</span>
                 </div>
-              </div>
-              <div className="flex-1 space-y-3 p-3">
-                {items.map((c) => (
-                  <Link key={c.id} to="/calls/$id" params={{ id: c.id }}
-                    className={`block rounded-lg border border-border bg-background p-4 transition hover:border-primary/40 hover:shadow-md ${col.key === "urgent" ? "pulse-critical" : ""}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-semibold text-primary">{c.id}</span>
-                      <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${col.key === "urgent" ? "bg-critical/15 text-critical" : col.key === "medium" ? "bg-warning/15 text-warning" : "bg-success/15 text-success"}`}>{c.priorityScore}</span>
-                    </div>
-                    <div className="mt-2 text-sm font-medium leading-snug">{c.issue}</div>
-                    <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <span className="rounded bg-muted px-1.5 py-0.5">{c.category}</span>
-                      <span className={`capitalize ${c.sentiment === "negative" ? "text-critical" : c.sentiment === "positive" ? "text-success" : ""}`}>{c.sentiment}</span>
-                    </div>
-                    <div className="mt-3 border-t border-border pt-2 text-[11px] text-muted-foreground">
-                      <span className="font-semibold text-foreground">Next:</span> {c.recommendedAction}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+                <div className="mt-3 text-sm font-semibold leading-snug">{t.summary}</div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{t.category}</span>
+                  <span className="rounded bg-critical/15 px-1.5 py-0.5 font-medium text-critical">{t.sentiment} · {Math.round(t.sentimentConfidence * 100)}%</span>
+                </div>
+                {t.priorityReasons.length > 0 && (
+                  <ul className="mt-3 space-y-1 border-t border-border pt-2 text-[11px] text-muted-foreground">
+                    {t.priorityReasons.slice(0, 3).map((r, i) => <li key={i}>• {r}</li>)}
+                  </ul>
+                )}
+                <div className="mt-3 rounded-md border border-critical/20 bg-critical/5 p-2 text-[12px]">
+                  <span className="font-semibold text-critical">Next:</span> <span className="text-foreground/90">{t.recommendation}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
