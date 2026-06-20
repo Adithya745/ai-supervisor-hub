@@ -9,38 +9,141 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppPriorityRouteImport } from './routes/_app.priority'
+import { Route as AppKnowledgeRouteImport } from './routes/_app.knowledge'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppCommandCenterRouteImport } from './routes/_app.command-center'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppAgentsRouteImport } from './routes/_app.agents'
+import { Route as AppCallsIdRouteImport } from './routes/_app.calls.$id'
 
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppPriorityRoute = AppPriorityRouteImport.update({
+  id: '/priority',
+  path: '/priority',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKnowledgeRoute = AppKnowledgeRouteImport.update({
+  id: '/knowledge',
+  path: '/knowledge',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCommandCenterRoute = AppCommandCenterRouteImport.update({
+  id: '/command-center',
+  path: '/command-center',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsRoute = AppAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCallsIdRoute = AppCallsIdRouteImport.update({
+  id: '/calls/$id',
+  path: '/calls/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AppAgentsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/command-center': typeof AppCommandCenterRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/knowledge': typeof AppKnowledgeRoute
+  '/priority': typeof AppPriorityRoute
+  '/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AppAgentsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/command-center': typeof AppCommandCenterRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/knowledge': typeof AppKnowledgeRoute
+  '/priority': typeof AppPriorityRoute
+  '/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/agents': typeof AppAgentsRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/command-center': typeof AppCommandCenterRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/knowledge': typeof AppKnowledgeRoute
+  '/_app/priority': typeof AppPriorityRoute
+  '/_app/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/agents'
+    | '/analytics'
+    | '/command-center'
+    | '/dashboard'
+    | '/knowledge'
+    | '/priority'
+    | '/calls/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/agents'
+    | '/analytics'
+    | '/command-center'
+    | '/dashboard'
+    | '/knowledge'
+    | '/priority'
+    | '/calls/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/agents'
+    | '/_app/analytics'
+    | '/_app/command-center'
+    | '/_app/dashboard'
+    | '/_app/knowledge'
+    | '/_app/priority'
+    | '/_app/calls/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +151,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/priority': {
+      id: '/_app/priority'
+      path: '/priority'
+      fullPath: '/priority'
+      preLoaderRoute: typeof AppPriorityRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/knowledge': {
+      id: '/_app/knowledge'
+      path: '/knowledge'
+      fullPath: '/knowledge'
+      preLoaderRoute: typeof AppKnowledgeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/command-center': {
+      id: '/_app/command-center'
+      path: '/command-center'
+      fullPath: '/command-center'
+      preLoaderRoute: typeof AppCommandCenterRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents': {
+      id: '/_app/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AppAgentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/calls/$id': {
+      id: '/_app/calls/$id'
+      path: '/calls/$id'
+      fullPath: '/calls/$id'
+      preLoaderRoute: typeof AppCallsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppAgentsRoute: typeof AppAgentsRoute
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppCommandCenterRoute: typeof AppCommandCenterRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppKnowledgeRoute: typeof AppKnowledgeRoute
+  AppPriorityRoute: typeof AppPriorityRoute
+  AppCallsIdRoute: typeof AppCallsIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAgentsRoute: AppAgentsRoute,
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppCommandCenterRoute: AppCommandCenterRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppKnowledgeRoute: AppKnowledgeRoute,
+  AppPriorityRoute: AppPriorityRoute,
+  AppCallsIdRoute: AppCallsIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
