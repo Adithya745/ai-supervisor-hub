@@ -1,120 +1,97 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TopBar } from "@/components/app-shell";
-import { sentimentTrend, categoryDist, priorityDist, escalationTrend, callVolume, topComplaints, agents_data } from "@/lib/mock-data";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell, Legend, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
+import { useTranscripts, useMetrics, useCategoryDist } from "@/lib/transcript-store";
+import { EmptyState } from "@/components/upload-zone";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 
 export const Route = createFileRoute("/_app/analytics")({
   head: () => ({ meta: [{ title: "AI Analytics · Sentinel AI" }] }),
   component: Analytics,
 });
 
-const tooltip = { contentStyle: { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 } };
+function Analytics() {
+  const transcripts = useTranscripts((s) => s.transcripts);
+  const m = useMetrics();
+  const categories = useCategoryDist();
 
-function Card({ title, subtitle, children, span = "" }: { title: string; subtitle?: string; children: React.ReactNode; span?: string }) {
+  if (transcripts.length === 0) return (<><TopBar title="AI Analytics" /><div className="p-6"><EmptyState /></div></>);
+
+  const topCategory = categories[0]?.name ?? "—";
+  const negPct = m.total ? Math.round((m.negative / m.total) * 100) : 0;
+  const urgPct = m.total ? Math.round((m.urgent / m.total) * 100) : 0;
+
+  // Reason-frequency analysis
+  const reasonMap = new Map<string, number>();
+  for (const t of transcripts) for (const r of t.priorityReasons) reasonMap.set(r, (reasonMap.get(r) ?? 0) + 1);
+  const topReasons = Array.from(reasonMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
+
+  // Trend by upload order
+  const sorted = [...transcripts].sort((a, b) => a.uploadedAt.localeCompare(b.uploadedAt));
+  const buckets = Math.min(10, sorted.length);
+  const size = Math.ceil(sorted.length / buckets);
+  const trend = Array.from({ length: buckets }, (_, i) => {
+    const slice = sorted.slice(i * size, (i + 1) * size);
+    return {
+      bucket: `B${i + 1}`,
+      escalations: slice.filter((t) => t.priority === "URGENT").length,
+      complaints: slice.filter((t) => t.category === "Complaint" || t.sentiment === "Negative").length,
+    };
+  });
+
   return (
-    <div className={`rounded-xl border border-border bg-card p-5 ${span}`}>
-      <div className="mb-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+    <>
+      <TopBar title="AI Analytics" subtitle={`Insights derived from ${m.total} transcript${m.total > 1 ? "s" : ""}`} />
+      <div className="space-y-6 p-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Most Common Category" value={topCategory} />
+          <Stat label="Negative Sentiment %" value={`${negPct}%`} tone="critical" />
+          <Stat label="Urgent Call %" value={`${urgPct}%`} tone="warning" />
+          <Stat label="Avg Priority Score" value={m.avgPriority} tone="primary" />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Panel title="Top Recurring Issues" subtitle="Detected escalation triggers across transcripts">
+            <BarChart data={topReasons} layout="vertical">
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false}/>
+              <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false}/>
+              <YAxis dataKey="name" type="category" stroke="var(--muted-foreground)" fontSize={10} width={160}/>
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}/>
+              <Bar dataKey="value" fill="var(--critical)" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </Panel>
+
+          <Panel title="Escalation & Complaint Trend" subtitle="Across upload batches">
+            <LineChart data={trend}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false}/>
+              <XAxis dataKey="bucket" stroke="var(--muted-foreground)" fontSize={11}/>
+              <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false}/>
+              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}/>
+              <Line type="monotone" dataKey="escalations" stroke="var(--critical)" strokeWidth={2.5} dot={{ r: 3 }}/>
+              <Line type="monotone" dataKey="complaints" stroke="var(--warning)" strokeWidth={2.5} dot={{ r: 3 }}/>
+            </LineChart>
+          </Panel>
+        </div>
       </div>
-      <div className="h-64">{children}</div>
+    </>
+  );
+}
+
+function Stat({ label, value, tone = "muted" }: { label: string; value: string | number; tone?: "muted" | "critical" | "warning" | "primary" }) {
+  const tones = { muted: "", critical: "text-critical", warning: "text-warning", primary: "text-primary" };
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-2 text-2xl font-bold ${tones[tone]}`}>{value}</div>
     </div>
   );
 }
 
-function Analytics() {
+function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactElement }) {
   return (
-    <>
-      <TopBar title="AI Insights & Analytics" subtitle="Cross-channel intelligence over the last 30 days" />
-      <div className="grid gap-4 p-6 lg:grid-cols-3">
-        <Card title="Sentiment Distribution" subtitle="14-day trend" span="lg:col-span-2">
-          <ResponsiveContainer>
-            <AreaChart data={sentimentTrend}>
-              <defs>
-                <linearGradient id="ap" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--success)" stopOpacity={0.5}/><stop offset="95%" stopColor="var(--success)" stopOpacity={0}/></linearGradient>
-                <linearGradient id="an" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--critical)" stopOpacity={0.5}/><stop offset="95%" stopColor="var(--critical)" stopOpacity={0}/></linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false}/>
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <Tooltip {...tooltip}/>
-              <Area type="monotone" dataKey="positive" stroke="var(--success)" fill="url(#ap)" />
-              <Area type="monotone" dataKey="negative" stroke="var(--critical)" fill="url(#an)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Priority Breakdown">
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={priorityDist} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3}>
-                {priorityDist.map((e, i) => <Cell key={i} fill={e.color}/>)}
-              </Pie>
-              <Tooltip {...tooltip}/>
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }}/>
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Category Distribution">
-          <ResponsiveContainer>
-            <BarChart data={categoryDist} layout="vertical">
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false}/>
-              <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <YAxis dataKey="name" type="category" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} width={70}/>
-              <Tooltip {...tooltip}/>
-              <Bar dataKey="value" fill="var(--chart-1)" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Escalation Trend" subtitle="Weekly %">
-          <ResponsiveContainer>
-            <LineChart data={escalationTrend}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false}/>
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <Tooltip {...tooltip}/>
-              <Line type="monotone" dataKey="rate" stroke="var(--warning)" strokeWidth={2.5} dot={{ r: 4, fill: "var(--warning)" }}/>
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Daily Call Volume">
-          <ResponsiveContainer>
-            <BarChart data={callVolume}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false}/>
-              <XAxis dataKey="hour" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <Tooltip {...tooltip}/>
-              <Bar dataKey="calls" fill="var(--primary)" radius={[6, 6, 0, 0]}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Top Complaint Types" span="lg:col-span-2">
-          <ResponsiveContainer>
-            <BarChart data={topComplaints}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false}/>
-              <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <YAxis stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false}/>
-              <Tooltip {...tooltip}/>
-              <Bar dataKey="value" fill="var(--critical)" radius={[6, 6, 0, 0]}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card title="Agent Performance Radar">
-          <ResponsiveContainer>
-            <RadarChart data={agents_data.map((a) => ({ name: a.name.split(" ")[0], quality: a.quality, sentiment: a.sentiment * 100, calls: (a.calls / 1.6) }))}>
-              <PolarGrid stroke="var(--border)"/>
-              <PolarAngleAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11}/>
-              <Radar dataKey="quality" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.3}/>
-              <Tooltip {...tooltip}/>
-            </RadarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-    </>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      <div className="mt-3 h-72"><ResponsiveContainer>{children}</ResponsiveContainer></div>
+    </div>
   );
 }
