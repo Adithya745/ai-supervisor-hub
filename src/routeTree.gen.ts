@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppUploadRouteImport } from './routes/_app.upload'
 import { Route as AppPriorityRouteImport } from './routes/_app.priority'
 import { Route as AppKnowledgeRouteImport } from './routes/_app.knowledge'
 import { Route as AppExportRouteImport } from './routes/_app.export'
@@ -28,6 +29,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppUploadRoute = AppUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPriorityRoute = AppPriorityRouteImport.update({
   id: '/priority',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/export': typeof AppExportRoute
   '/knowledge': typeof AppKnowledgeRoute
   '/priority': typeof AppPriorityRoute
+  '/upload': typeof AppUploadRoute
   '/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRoutesByTo {
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/export': typeof AppExportRoute
   '/knowledge': typeof AppKnowledgeRoute
   '/priority': typeof AppPriorityRoute
+  '/upload': typeof AppUploadRoute
   '/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRoutesById {
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/_app/export': typeof AppExportRoute
   '/_app/knowledge': typeof AppKnowledgeRoute
   '/_app/priority': typeof AppPriorityRoute
+  '/_app/upload': typeof AppUploadRoute
   '/_app/calls/$id': typeof AppCallsIdRoute
 }
 export interface FileRouteTypes {
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/export'
     | '/knowledge'
     | '/priority'
+    | '/upload'
     | '/calls/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/export'
     | '/knowledge'
     | '/priority'
+    | '/upload'
     | '/calls/$id'
   id:
     | '__root__'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/_app/export'
     | '/_app/knowledge'
     | '/_app/priority'
+    | '/_app/upload'
     | '/_app/calls/$id'
   fileRoutesById: FileRoutesById
 }
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/upload': {
+      id: '/_app/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof AppUploadRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/priority': {
       id: '/_app/priority'
@@ -230,6 +249,7 @@ interface AppRouteChildren {
   AppExportRoute: typeof AppExportRoute
   AppKnowledgeRoute: typeof AppKnowledgeRoute
   AppPriorityRoute: typeof AppPriorityRoute
+  AppUploadRoute: typeof AppUploadRoute
   AppCallsIdRoute: typeof AppCallsIdRoute
 }
 
@@ -241,6 +261,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExportRoute: AppExportRoute,
   AppKnowledgeRoute: AppKnowledgeRoute,
   AppPriorityRoute: AppPriorityRoute,
+  AppUploadRoute: AppUploadRoute,
   AppCallsIdRoute: AppCallsIdRoute,
 }
 
