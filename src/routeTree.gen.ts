@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppPriorityRouteImport } from './routes/_app.priority'
 import { Route as AppKnowledgeRouteImport } from './routes/_app.knowledge'
+import { Route as AppExportRouteImport } from './routes/_app.export'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCommandCenterRouteImport } from './routes/_app.command-center'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
@@ -36,6 +37,11 @@ const AppPriorityRoute = AppPriorityRouteImport.update({
 const AppKnowledgeRoute = AppKnowledgeRouteImport.update({
   id: '/knowledge',
   path: '/knowledge',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppExportRoute = AppExportRouteImport.update({
+  id: '/export',
+  path: '/export',
   getParentRoute: () => AppRoute,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AppAnalyticsRoute
   '/command-center': typeof AppCommandCenterRoute
   '/dashboard': typeof AppDashboardRoute
+  '/export': typeof AppExportRoute
   '/knowledge': typeof AppKnowledgeRoute
   '/priority': typeof AppPriorityRoute
   '/calls/$id': typeof AppCallsIdRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsRoute
   '/command-center': typeof AppCommandCenterRoute
   '/dashboard': typeof AppDashboardRoute
+  '/export': typeof AppExportRoute
   '/knowledge': typeof AppKnowledgeRoute
   '/priority': typeof AppPriorityRoute
   '/calls/$id': typeof AppCallsIdRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/command-center': typeof AppCommandCenterRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/export': typeof AppExportRoute
   '/_app/knowledge': typeof AppKnowledgeRoute
   '/_app/priority': typeof AppPriorityRoute
   '/_app/calls/$id': typeof AppCallsIdRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/command-center'
     | '/dashboard'
+    | '/export'
     | '/knowledge'
     | '/priority'
     | '/calls/$id'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/command-center'
     | '/dashboard'
+    | '/export'
     | '/knowledge'
     | '/priority'
     | '/calls/$id'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_app/analytics'
     | '/_app/command-center'
     | '/_app/dashboard'
+    | '/_app/export'
     | '/_app/knowledge'
     | '/_app/priority'
     | '/_app/calls/$id'
@@ -163,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/knowledge'
       fullPath: '/knowledge'
       preLoaderRoute: typeof AppKnowledgeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/export': {
+      id: '/_app/export'
+      path: '/export'
+      fullPath: '/export'
+      preLoaderRoute: typeof AppExportRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/dashboard': {
@@ -208,6 +227,7 @@ interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppCommandCenterRoute: typeof AppCommandCenterRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppExportRoute: typeof AppExportRoute
   AppKnowledgeRoute: typeof AppKnowledgeRoute
   AppPriorityRoute: typeof AppPriorityRoute
   AppCallsIdRoute: typeof AppCallsIdRoute
@@ -218,6 +238,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppCommandCenterRoute: AppCommandCenterRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppExportRoute: AppExportRoute,
   AppKnowledgeRoute: AppKnowledgeRoute,
   AppPriorityRoute: AppPriorityRoute,
   AppCallsIdRoute: AppCallsIdRoute,
