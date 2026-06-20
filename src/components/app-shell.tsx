@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Brain, LayoutDashboard, Headphones, Kanban, BookOpen, BarChart3, Users, Download, Sparkles, Moon, Sun, Search, Bell } from "lucide-react";
+import { Brain, LayoutDashboard, Headphones, Kanban, BookOpen, BarChart3, Users, Download, Sparkles, Moon, Sun, Search, Bell, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -10,15 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const nav = [
+  { group: "Ingest", items: [
+    { title: "Upload Transcripts", url: "/upload", icon: Upload },
+  ]},
   { group: "Overview", items: [
     { title: "Executive Dashboard", url: "/dashboard", icon: LayoutDashboard },
   ]},
   { group: "Operations", items: [
-    { title: "Command Center", url: "/command-center", icon: Headphones },
+    { title: "Transcript Explorer", url: "/command-center", icon: Headphones },
     { title: "Priority Monitor", url: "/priority", icon: Kanban },
   ]},
   { group: "Intelligence", items: [
-    { title: "RAG Knowledge", url: "/knowledge", icon: BookOpen },
+    { title: "Search", url: "/knowledge", icon: BookOpen },
     { title: "AI Analytics", url: "/analytics", icon: BarChart3 },
     { title: "Agent Performance", url: "/agents", icon: Users },
   ]},
